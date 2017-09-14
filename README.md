@@ -28,12 +28,6 @@ For different models to detect different kinds of content, they are tested with 
 
 adult: 93%
 
-violence: 97%
-
-cartoon: 94%.
-
-disgusting: ongoing.
-
 ## Improve
 While the models achieve fairly good accuracy, they have potential for improvement. There are a few possible ways. 
 
