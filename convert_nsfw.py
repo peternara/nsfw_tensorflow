@@ -9,7 +9,7 @@ import sys
 
 import tensorflow as tf
 
-import dataset_utils
+from datasets import dataset_utils
 
 _NUM_VALIDATION = 26000
 

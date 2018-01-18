@@ -21,7 +21,7 @@ from __future__ import print_function
 import math
 import tensorflow as tf
 
-import nsfw
+from datasets import nsfw
 from nets import nets_factory
 from preprocessing import preprocessing_factory
 

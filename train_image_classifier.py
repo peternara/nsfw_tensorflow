@@ -4,8 +4,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-import nsfw
-import model_deploy
+from datasets import nsfw
+from deployment import model_deploy
 from nets import nets_factory
 from preprocessing import preprocessing_factory
 
