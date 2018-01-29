@@ -12,7 +12,7 @@ This code is a demo to use inception network to detect NSFW images.
 
 <a id='Data'></a>
 ## Preparing the dataset
-The dataset contains 260k images with 130k NSFW images as positive and 130k SFW images as negative. I don't own this dataset, [contact me](zixuan.liang@outlook.com) for more information. 
+The dataset contains 260k images with 130k NSFW images as positive and 130k SFW images as negative. I don't own this dataset, [contact me](https://github.com/ZixuanLiang) for more information. 
 
 The raw data is converted to TFRecord format. 
 
