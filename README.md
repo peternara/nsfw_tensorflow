@@ -123,6 +123,6 @@ bazel-bin/tensorflow/python/tools/freeze_graph \
   --input_binary=true --output_graph=/tmp/frozen_inception_v3.pb \
   --output_node_names=InceptionV3/Predictions/Reshape_1
 ```
-<a id='Freeze'></a>
+<a id='Deploy'></a>
 ## Deploy the model
 I deploy the model on Heroku. Try the demo [here](https://zixuanliang.github.io/nsfw_demo.html).
