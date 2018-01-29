@@ -4,8 +4,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from datasets import nsfw
-from deployment import model_deploy
+import nsfw
+import model_deploy
 from nets import nets_factory
 from preprocessing import preprocessing_factory
 
@@ -54,9 +54,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer(
     'task', 0, 'Task id of the replica running the training.')
 
-######################
 # Optimization Flags #
-######################
 
 tf.app.flags.DEFINE_float(
     'weight_decay', 0.00004, 'The weight decay on the model weights.')
@@ -105,9 +103,7 @@ tf.app.flags.DEFINE_float('rmsprop_momentum', 0.9, 'Momentum.')
 
 tf.app.flags.DEFINE_float('rmsprop_decay', 0.9, 'Decay term for RMSProp.')
 
-#######################
 # Learning Rate Flags #
-#######################
 
 tf.app.flags.DEFINE_string(
     'learning_rate_decay_type',
@@ -144,12 +140,7 @@ tf.app.flags.DEFINE_float(
     'The decay to use for the moving average.'
     'If left as None, then moving averages are not used.')
 
-#######################
 # Dataset Flags #
-#######################
-
-tf.app.flags.DEFINE_string(
-    'dataset_name', 'imagenet', 'The name of the dataset to load.')
 
 tf.app.flags.DEFINE_string(
     'dataset_split_name', 'train', 'The name of the train/test split.')
@@ -179,9 +170,7 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_integer('max_number_of_steps', None,
                             'The maximum number of training steps.')
 
-#####################
 # Fine-Tuning Flags #
-#####################
 
 tf.app.flags.DEFINE_string(
     'checkpoint_path', None,
@@ -205,18 +194,6 @@ FLAGS = tf.app.flags.FLAGS
 
 
 def _configure_learning_rate(num_samples_per_epoch, global_step):
-  """Configures the learning rate.
-
-  Args:
-    num_samples_per_epoch: The number of samples in each epoch of training.
-    global_step: The global_step tensor.
-
-  Returns:
-    A `Tensor` representing the learning rate.
-
-  Raises:
-    ValueError: if
-  """
   decay_steps = int(num_samples_per_epoch / FLAGS.batch_size *
                     FLAGS.num_epochs_per_decay)
   if FLAGS.sync_replicas:
@@ -245,17 +222,6 @@ def _configure_learning_rate(num_samples_per_epoch, global_step):
 
 
 def _configure_optimizer(learning_rate):
-  """Configures the optimizer used for training.
-
-  Args:
-    learning_rate: A scalar or `Tensor` learning rate.
-
-  Returns:
-    An instance of an optimizer.
-
-  Raises:
-    ValueError: if FLAGS.optimizer is not recognized.
-  """
   if FLAGS.optimizer == 'adadelta':
     optimizer = tf.train.AdadeltaOptimizer(
         learning_rate,
@@ -297,14 +263,6 @@ def _configure_optimizer(learning_rate):
 
 
 def _get_init_fn():
-  """Returns a function run by the chief worker to warm-start the training.
-
-  Note that the init_fn is only run when initializing the model during the very
-  first global step.
-
-  Returns:
-    An init function run by the supervisor.
-  """
   if FLAGS.checkpoint_path is None:
     return None
 
@@ -346,11 +304,6 @@ def _get_init_fn():
 
 
 def _get_variables_to_train():
-  """Returns a list of variables to train.
-
-  Returns:
-    A list of variables to train by the optimizer.
-  """
   if FLAGS.trainable_scopes is None:
     return tf.trainable_variables()
   else:
@@ -369,9 +322,7 @@ def main(_):
 
   tf.logging.set_verbosity(tf.logging.INFO)
   with tf.Graph().as_default():
-    #######################
     # Config model_deploy #
-    #######################
     deploy_config = model_deploy.DeploymentConfig(
         num_clones=FLAGS.num_clones,
         clone_on_cpu=FLAGS.clone_on_cpu,
@@ -383,31 +334,23 @@ def main(_):
     with tf.device(deploy_config.variables_device()):
       global_step = slim.create_global_step()
 
-    ######################
     # Select the dataset #
-    ######################
     dataset = nsfw.get_split(FLAGS.dataset_split_name, FLAGS.dataset_dir)
 
-    ######################
     # Select the network #
-    ######################
     network_fn = nets_factory.get_network_fn(
         FLAGS.model_name,
         num_classes=(dataset.num_classes - FLAGS.labels_offset),
         weight_decay=FLAGS.weight_decay,
         is_training=True)
 
-    #####################################
     # Select the preprocessing function #
-    #####################################
     preprocessing_name = FLAGS.preprocessing_name or FLAGS.model_name
     image_preprocessing_fn = preprocessing_factory.get_preprocessing(
         preprocessing_name,
         is_training=True)
 
-    ##############################################################
     # Create a dataset provider that loads data from the dataset #
-    ##############################################################
     with tf.device(deploy_config.inputs_device()):
       provider = slim.dataset_data_provider.DatasetDataProvider(
           dataset,
@@ -431,17 +374,13 @@ def main(_):
       batch_queue = slim.prefetch_queue.prefetch_queue(
           [images, labels], capacity=2 * deploy_config.num_clones)
 
-    ####################
     # Define the model #
-    ####################
     def clone_fn(batch_queue):
       """Allows data parallelism by creating multiple clones of network_fn."""
       images, labels = batch_queue.dequeue()
       logits, end_points = network_fn(images)
 
-      #############################
       # Specify the loss function #
-      #############################
       if 'AuxLogits' in end_points:
         slim.losses.softmax_cross_entropy(
             end_points['AuxLogits'], labels,
@@ -476,9 +415,7 @@ def main(_):
     for variable in slim.get_model_variables():
       summaries.add(tf.summary.histogram(variable.op.name, variable))
 
-    #################################
     # Configure the moving averages #
-    #################################
     if FLAGS.moving_average_decay:
       moving_average_variables = slim.get_model_variables()
       variable_averages = tf.train.ExponentialMovingAverage(
@@ -486,9 +423,7 @@ def main(_):
     else:
       moving_average_variables, variable_averages = None, None
 
-    #########################################
     # Configure the optimization procedure. #
-    #########################################
     with tf.device(deploy_config.optimizer_device()):
       learning_rate = _configure_learning_rate(dataset.num_samples, global_step)
       optimizer = _configure_optimizer(learning_rate)
@@ -535,10 +470,7 @@ def main(_):
     # Merge all summaries together.
     summary_op = tf.summary.merge(list(summaries), name='summary_op')
 
-
-    ###########################
     # Kicks off the training. #
-    ###########################
     slim.learning.train(
         train_tensor,
         logdir=FLAGS.train_dir,

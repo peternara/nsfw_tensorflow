@@ -9,15 +9,20 @@ import sys
 
 import tensorflow as tf
 
-from datasets import dataset_utils
+import dataset_utils
+
+FLAGS = tf.app.flags.FLAGS
+
+tf.app.flags.DEFINE_string(
+    'dataset_dir',
+    None,
+    'The directory where the output TFRecords files are saved.')
 
 _NUM_VALIDATION = 26000
 
 _RANDOM_SEED = 0
 
 _NUM_SHARDS = 150
-
-dataset_dir = '/home/zixuan/Documents/nsfw'
 
 class ImageReader(object):
   def __init__(self):
